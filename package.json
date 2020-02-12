@@ -5,7 +5,8 @@
   "main": "src/index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "publish_lambda": "node scripts/publishLambda.js"
+    "publish_lambda": "node scripts/publishLambda.js",
+    "update_lambda": "node scripts/updateLambda.js"
   },
   "author": "Josh Menden",
   "license": "MIT",
