@@ -1,7 +1,28 @@
 var AWS = require('aws-sdk');
 
 exports.handler = async (event) => {
-  var params = {
+  var params = textractParams(event)
+
+  var textract = new AWS.Textract();
+
+  const textractPromise = new Promise(function (resolve, reject) {
+    textract.analyzeDocument(params, function(err, data) {
+      if (err) reject(err);
+      else resolve(data);
+    });
+  });
+
+  const results = await textractPromise;
+  var parsed = parse(results);
+  if (event.condense) {
+    return condense(parsed);
+  } else {
+    return parsed;
+  }
+};
+
+function textractParams (event) {
+  return {
     Document: {
       S3Object: {
         Bucket: event.Bucket,
@@ -10,24 +31,9 @@ exports.handler = async (event) => {
     },
     FeatureTypes: ["FORMS"]
   };
+}
 
-  var textract = new AWS.Textract();
-
-  const textractPromise = new Promise(function (resolve, reject) {
-    textract.analyzeDocument(params, function(err, data) {
-      if (err) {
-        reject(err);
-      } else {
-        resolve(data);
-      }
-    });
-  });
-
-  const results = await textractPromise;
-  return generateKeyValueObject(results);
-};
-
-function generateKeyValueObject (textractResults) {
+function parse (textractResults) {
   const blocks = textractResults.Blocks;
 
   const blocksById = {};
@@ -41,39 +47,52 @@ function generateKeyValueObject (textractResults) {
   let returnArray = [];
 
   keyBlocks.forEach(keyBlock => {
-    var keyBlockChildrenIds = keyBlock.Relationships.filter(rel => rel.Type === "CHILD")[0]["Ids"];
-    var key = collectValuesFromIds(blocksById, keyBlockChildrenIds);
-
-    var associatedValueBlockId = keyBlock.Relationships.filter(rel => rel.Type === "VALUE")[0]["Ids"][0];
-    var associatedValueBlock = blocksById[associatedValueBlockId];
-    var relationships = associatedValueBlock.Relationships;
-    var value = ''
-    if (relationships) {
-      var valueBlockChildrenIds = relationships.filter(rel => rel.Type === "CHILD")[0]["Ids"];
-      value = collectValuesFromIds(blocksById, valueBlockChildrenIds);
-    }
-
-    returnArray.push({
-      key: key,
-      value: value
-    });
+    returnArray.push(extractValuesFromKeyValueSet(blocksById, keyBlock))
   });
 
   return returnArray;
 }
 
-function collectValuesFromIds (mappedBlocks, ids) {
-  var collectedString = '';
+function extractValuesFromKeyValueSet (mappedBlocks, keyBlock) {
+  var keyBlockChildrenIds = keyBlock.Relationships.filter(rel => rel.Type === "CHILD")[0]["Ids"];
+  var key = collectValueObjectsFromIds(mappedBlocks, keyBlockChildrenIds);
+
+  var associatedValueBlockId = keyBlock.Relationships.filter(rel => rel.Type === "VALUE")[0]["Ids"][0];
+  var associatedValueBlock = mappedBlocks[associatedValueBlockId];
+  var relationships = associatedValueBlock.Relationships;
+  var value = null
+  if (relationships) {
+    var valueBlockChildrenIds = relationships.filter(rel => rel.Type === "CHILD")[0]["Ids"];
+    value = collectValueObjectsFromIds(mappedBlocks, valueBlockChildrenIds);
+  }
+
+  return {
+    key: key,
+    value: value
+  };
+}
+
+function condense (parsed) {
+  return parsed.map(keyValue => {
+    return {
+      key: keyValue.key.map(keyWords => keyWords.text).join(" "),
+      value: keyValue.value ? keyValue.value.map(valueWords => valueWords.text).join(" ") : null
+    }
+  })
+}
+
+function collectValueObjectsFromIds (mappedBlocks, ids) {
+  var collection = [];
+
   ids.forEach(id => {
     var block = mappedBlocks[id];
     if (block.BlockType === "WORD") {
-      if (collectedString) {
-        collectedString = `${collectedString} ${block.Text}`;
-      } else {
-        collectedString = collectedString + block.Text;
-      }
+      collection.push({
+        text: block.Text,
+        confidence: block.Confidence
+      });
     }
   });
 
-  return collectedString;
+  return collection;
 }
