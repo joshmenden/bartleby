@@ -48,13 +48,38 @@ function generateKeyValueObject (textractResults) {
       var block = blocks.filter(block => block.Id === id)[0];
       if (block.BlockType === "WORD") {
         if (key) {
-          key = `${key} ${block.Text}`
+          key = `${key} ${block.Text}`;
         } else {
           key = key + block.Text;
         }
       }
     });
-    returnArray.push(key);
+
+    var valueValue = '';
+    // var valueBlock = blocksById[keyBlock.Relationships.filter(rel => rel.Type === "VALUE")[0]["Ids"][0]]
+
+    // var keyBlockValueIds = keyBlock.Relationships.filter(rel => rel.Type === "VALUE")[0]["Ids"];
+    // keyBlockValueIds.forEach(id => {
+    //   var valueBlock = blocks.filter(block => block.Id === id)[0];
+    //   if (valueBlock.EntityTypes[0] === "VALUE") {
+    //     var childrenIds = valueBlock.Relationships.filter(rel => rel.type === "CHILD")[0]["Ids"];
+    //     childrenIds.forEach(id => {
+    //       var wordBlock = blocks.filter(block => block.Id === id)[0];
+    //       if (wordBlock.BlockType === "WORD") {
+    //         if (valueValue) {
+    //           valueValue = `${valueValue} ${wordBlock.Text}`;
+    //         } else {
+    //           valueValue = valueValue + wordBlock.Text;
+    //         }
+    //       }
+    //     });
+    //   }
+    // });
+
+    returnArray.push({
+      key: key,
+      value: valueValue
+    });
   });
 
   return returnArray;
