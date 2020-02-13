@@ -1,7 +1,6 @@
 require('dotenv').config()
 var shell = require('shelljs')
 
-
 shell.cd('src')
 shell.exec('zip ../index.zip *')
 shell.cd('..')
