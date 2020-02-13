@@ -23,14 +23,18 @@ exports.handler = async (event) => {
     });
   })
 
-  return textractPromise
-  // textractPromise.then(res => {
-  //   const response = {
-  //     statusCode: 200,
-  //     textract: JSON.stringify(res),
-  //     body: JSON.stringify('Hello THIS IS US from my NPM script'),
-  //   };
-
-  //   return response;
-  // })
+  const results = await textractPromise
+  return generateKeyValueObject(results)
 };
+
+function generateKeyValueObject (textractResults) {
+  const blocks = textractResults.Blocks;
+
+  const blocksById = {};
+  blocks.forEach(block => {
+    blocksById[block.Id] = block
+  });
+
+  const keyValueBlocks = blocks.filter(block => block.BlockType === "KEY_VALUE_SET")
+  return keyValueBlocks
+}
