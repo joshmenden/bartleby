@@ -12,6 +12,7 @@
   "author": "Josh Menden",
   "license": "MIT",
   "dependencies": {
+    "aws-sdk": "^2.616.0",
     "dotenv": "^8.2.0",
     "shelljs": "^0.8.3"
   }
