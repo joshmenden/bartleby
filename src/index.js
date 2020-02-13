@@ -4,8 +4,8 @@ exports.handler = async (event) => {
   var params = {
     Document: {
       S3Object: {
-        Bucket: 'bartleby',
-        Name: 'fake-w2-forms.jpg',
+        Bucket: event.Bucket,
+        Name: event.Name,
       }
     },
     FeatureTypes: ["FORMS"]
