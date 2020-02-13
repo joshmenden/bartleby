@@ -36,51 +36,44 @@ function generateKeyValueObject (textractResults) {
   });
 
   const keyValueBlocks = blocks.filter(block => block.BlockType === "KEY_VALUE_SET");
-
   const keyBlocks = keyValueBlocks.filter(block => block.EntityTypes[0] === "KEY");
 
   let returnArray = [];
 
   keyBlocks.forEach(keyBlock => {
-    var key = '';
     var keyBlockChildrenIds = keyBlock.Relationships.filter(rel => rel.Type === "CHILD")[0]["Ids"];
-    keyBlockChildrenIds.forEach(id => {
-      var block = blocks.filter(block => block.Id === id)[0];
-      if (block.BlockType === "WORD") {
-        if (key) {
-          key = `${key} ${block.Text}`;
-        } else {
-          key = key + block.Text;
-        }
-      }
-    });
+    var key = collectValuesFromIds(blocksById, keyBlockChildrenIds);
 
-    var valueValue = '';
-    // var valueBlock = blocksById[keyBlock.Relationships.filter(rel => rel.Type === "VALUE")[0]["Ids"][0]]
-
-    // var keyBlockValueIds = keyBlock.Relationships.filter(rel => rel.Type === "VALUE")[0]["Ids"];
-    // keyBlockValueIds.forEach(id => {
-    //   var valueBlock = blocks.filter(block => block.Id === id)[0];
-    //   if (valueBlock.EntityTypes[0] === "VALUE") {
-    //     var childrenIds = valueBlock.Relationships.filter(rel => rel.type === "CHILD")[0]["Ids"];
-    //     childrenIds.forEach(id => {
-    //       var wordBlock = blocks.filter(block => block.Id === id)[0];
-    //       if (wordBlock.BlockType === "WORD") {
-    //         if (valueValue) {
-    //           valueValue = `${valueValue} ${wordBlock.Text}`;
-    //         } else {
-    //           valueValue = valueValue + wordBlock.Text;
-    //         }
-    //       }
-    //     });
-    //   }
-    // });
+    var associatedValueBlockId = keyBlock.Relationships.filter(rel => rel.Type === "VALUE")[0]["Ids"][0];
+    var associatedValueBlock = blocksById[associatedValueBlockId];
+    var relationships = associatedValueBlock.Relationships;
+    var value = ''
+    if (relationships) {
+      var valueBlockChildrenIds = relationships.filter(rel => rel.Type === "CHILD")[0]["Ids"];
+      value = collectValuesFromIds(blocksById, valueBlockChildrenIds);
+    }
 
     returnArray.push({
       key: key,
-      value: valueValue
+      value: value
     });
   });
 
   return returnArray;
+}
+
+function collectValuesFromIds (mappedBlocks, ids) {
+  var collectedString = '';
+  ids.forEach(id => {
+    var block = mappedBlocks[id];
+    if (block.BlockType === "WORD") {
+      if (collectedString) {
+        collectedString = `${collectedString} ${block.Text}`;
+      } else {
+        collectedString = collectedString + block.Text;
+      }
+    }
+  });
+
+  return collectedString;
 }
