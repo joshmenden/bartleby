@@ -21,10 +21,10 @@ exports.handler = async (event) => {
         resolve(data);
       }
     });
-  })
+  });
 
-  const results = await textractPromise
-  return generateKeyValueObject(results)
+  const results = await textractPromise;
+  return generateKeyValueObject(results);
 };
 
 function generateKeyValueObject (textractResults) {
@@ -32,9 +32,30 @@ function generateKeyValueObject (textractResults) {
 
   const blocksById = {};
   blocks.forEach(block => {
-    blocksById[block.Id] = block
+    blocksById[block.Id] = block;
   });
 
-  const keyValueBlocks = blocks.filter(block => block.BlockType === "KEY_VALUE_SET")
-  return keyValueBlocks
+  const keyValueBlocks = blocks.filter(block => block.BlockType === "KEY_VALUE_SET");
+
+  const keyBlocks = keyValueBlocks.filter(block => block.EntityTypes[0] === "KEY");
+
+  let returnArray = [];
+
+  keyBlocks.forEach(keyBlock => {
+    var key = '';
+    var keyBlockChildrenIds = keyBlock.Relationships.filter(rel => rel.Type === "CHILD")[0]["Ids"];
+    keyBlockChildrenIds.forEach(id => {
+      var block = blocks.filter(block => block.Id === id)[0];
+      if (block.BlockType === "WORD") {
+        if (key) {
+          key = `${key} ${block.Text}`
+        } else {
+          key = key + block.Text;
+        }
+      }
+    });
+    returnArray.push(key);
+  });
+
+  return returnArray;
 }
